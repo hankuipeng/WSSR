@@ -1,11 +1,9 @@
-% The changes we made in this version (based on WSSR_le_v1.m): 
-% (a) we remove x_{j}s if x_{i}^{T}x_{j} = 0,
-% (b) we also order the cosine similarities instead of the absolute values.
-% (3) we allow for an additional option for an equal weighting D
+% This function is a variant of WSSR_le.m. In this function, the entries in
+% D are calculated using the absolute cosine similarity value. 
 
-% Last updated: 4 Mar. 2020
+% Last updated: 11 Mar. 2020
 
-function W0 = WSSR_le(X, k, rho, normalize, stretch, weight, euclid)
+function W0 = WSSR_le_cos(X, k, rho, normalize, stretch, weight)
 
 N = size(X, 1);
 
@@ -26,10 +24,6 @@ if nargin < 6
     weight = 1; % whether we use cosine similarity (1) to create D or not (0)
 end
 
-if nargin < 7 % whether euclidean is used or not
-    euclid = 0;
-end
-
 if length(rho) == 1
     rhos = ones(N,1)*rho;
 else
@@ -38,7 +32,9 @@ end
 
 
 %%
+epsilon = 1.0e-4; 
 W0 = zeros(N);
+
 for i = 1:N
     
     rho = rhos(i);
@@ -51,24 +47,16 @@ for i = 1:N
    
     
     %% calculate the cosine similarities
-    if euclid == 1
-        dists = [];
-        for ii = 1:size(Xopt, 2)
-            dists(ii) = sqrt(sum((yopt-Xopt(:,ii)).^2));
-        end
-        
-        %%
-        [vals inds]= sort(dists, 'ascend');
-    else
-        sims = yopt'*Xopt;
-        if sum(sims == 0) ~= 0
-            idx = idx(find(sims~=0));
-            sims = sims(find(sims~=0));
-        end
-        
-        [vals inds]= sort(abs(sims), 'descend');
-        %[vals inds]= sort(sims, 'descend');
+    sims = yopt'*Xopt;
+    
+    if sum(sims <= 1e-4) ~= 0 
+        idx = find(sims >= 1e-4);
+        sims = sims(find(sims >= 1e-4));
+        Xopt = Xopt(:,idx);
     end
+    
+    [vals inds]= sort(abs(sims), 'descend');
+    %[vals inds]= sort(sims, 'descend');
     
     
     %%
@@ -80,14 +68,12 @@ for i = 1:N
         if k > length(vals) % if some zero entries have been removed from sims
             dk = vals;
             nn = inds;
+            k = length(dk);
         else
             dk = vals(1:k);
             nn = inds(1:k);
         end
     end
-    
-    %dk = val(1:k);
-    %nn = ind(1:k);
 
     
     %% We need to ensure that D is invertible
@@ -108,10 +94,6 @@ for i = 1:N
         Y = Xst;
     end
     
-    
-    %%
-    %epsilon = 1;
-    epsilon = 1.0e-4; 
     a = Y'*Y + epsilon.*D'*D;
     b = ones(length(dk), 1);
     

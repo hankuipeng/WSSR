@@ -5,9 +5,9 @@
 
 % Suitable for data with manifold structure.
 
-% Last updated: 9 Mar. 2020
+% Last updated: 16 Mar. 2020
 
-function W0 = WSSR_le_euclid(X, k, rho, weight)
+function W0 = WSSR_le_euclid(X, k, rho, normalize, weight)
 
 N = size(X, 1);
 
@@ -17,7 +17,16 @@ else
     rhos = rho;
 end
 
-if nargin < 3
+if nargin < 4
+    normalize = 1;
+end
+
+if normalize == 1
+    X0 = X;
+    X = norml2(X0, 1);
+end
+
+if nargin < 5
     weight = 1;
 end
 
@@ -34,7 +43,6 @@ for i = 1:N
     Xopt = X(idx,:)';
     yopt = X(i,:)';
     
-    %sims = yopt'*Xopt;
     dists = [];
     for ii = 1:size(Xopt, 2)
         dists(ii) = sqrt(sum((yopt-Xopt(:,ii)).^2));
@@ -42,13 +50,12 @@ for i = 1:N
     
     %%
     [vals inds]= sort(dists, 'ascend');
-    %[vals inds]= sort(sims, 'descend');
     
     nn = inds(1:k);
     dk = vals(1:k);
     
     if weight == 1
-        D = diag(dk);
+        D = diag(max(1e-4, dk)); % prevent the scenario where dk=0
     else
         D = diag(ones(length(dk),1));
     end

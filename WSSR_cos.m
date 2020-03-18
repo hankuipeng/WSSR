@@ -2,10 +2,6 @@
 % data matrix. It is done by solving N weighted sparse simplex
 % representation (WSSR) problems. 
 
-% The changes we made in this version (based on WSSR_v2.m): 
-% (a) we remove x_{j}s if x_{i}^{T}x_{j} = 0,
-% (b) we also order the cosine similarities instead of the absolute values.
-
 % Inputs:
 % X: N by P data matrix
 % k: the number of nearest neighbors to consider 
@@ -14,10 +10,13 @@
 % stretch: 1 or 0 depending on whether to stretch X_{-i} to touch the
 % perpendicular hyperplane of x_{i}
 
+% Last updated: 16th March 2020
 
-function W0 = WSSR(X, k, rho, normalize, stretch)
+
+function W0 = WSSR_cos(X, k, rho, normalize, stretch, weight)
 
 N = size(X, 1);
+sqeps = 1.0e-2; % square root of epsilon
 
 if nargin < 4
     normalize = 1;
@@ -30,6 +29,10 @@ end
 
 if nargin < 5
     stretch = 0; % the default setting does not stretch the data points
+end
+
+if nargin < 6
+    weight = 1;
 end
 
 
@@ -46,26 +49,39 @@ for i = 1:N
     sims = yopt'*Xopt;
     
     %% We remove any zero cosine similarities
-    if sum(sims == 0) ~= 0 
-        idx = idx(find(sims~=0));
-        sims = sims(find(sims~=0));
+    if sum(sims <= 1e-4) ~= 0 
+        idx = find(sims >= 1e-4);
+        sims = sims(find(sims >= 1e-4));
+        Xopt = Xopt(:,idx);
     end
     
     
     %% sort the similarity values in descending order 
-    %[vals, inds]= sort(sims, 'descend');
     [vals, inds]= sort(abs(sims), 'descend');
+    %[vals, inds]= sort(sims, 'descend');
     
     if k == 0 % consider only the positive similarity values 
         dk = vals(find(vals>0));
         nn = inds(find(vals>0));
         k = length(dk);
     else
-        dk = vals(1:k);
-        nn = inds(1:k);
+        if k > length(vals) % if some zero entries have been removed from sims
+            dk = vals;
+            nn = inds;
+            k = length(dk);
+        else
+            dk = vals(1:k);
+            nn = inds(1:k);
+        end
     end
     
-    Dinv = diag(dk); 
+    
+    %%
+    if weight == 1
+        Dinv = diag(dk);
+    else
+        Dinv = eye(length(dk));
+    end 
     
     
     %% stretch the data points that will be considered in the program
@@ -75,25 +91,20 @@ for i = 1:N
         Xst = Xst*diag(Ts);
         Xopt(:,nn) = Xst;
     end
-    
-    
-    %% since n<p we add small ridge penalty to the formulation
-    sqeps = 1.0e-2; % squared epsilon
-    
-    %Xstar = [Xopt(:,nn); sqeps*Dinv]; % no penalty on the second l2 norm
-    %Xstar = [Xopt(:,nn)*Dinv; sqeps*Dinv]; % no penalty on both of the l2 norms
-    %Xstar = [Xopt(:,nn); sqeps*eye(k)]; % penalty on all three terms 
-    Xstar = [Xopt(:,nn)*Dinv; sqeps*eye(k)]; % no penalty on the first l2 norm
-    ystar = [yopt; zeros(k,1)];
 
     
     %% QP for Constrained LASSO
-    H = [Xstar'*Xstar, -Xstar'*Xstar; -Xstar'*Xstar, Xstar'*Xstar];
+    Xstar = [Xopt(:,nn)*Dinv; sqeps*eye(k)]; 
+    ystar = [yopt; zeros(k,1)];
+    
+    A = Xstar'*Xstar;
+    B = -Xstar'*Xstar;
+    
+    H = [A, B; B, A];
     f = rho*ones(2*k,1) - [Xstar'*ystar; -Xstar'*ystar]; 
-    %f = rho*ones(2*k,1) - [(Xstar*Dinv)'*ystar; -(Xstar*Dinv)'*ystar];
     
     
-    %% the inequality constraint [-Dinv, Dinv]*[alpha^+; alpha^-] <= zeros(k,1) is actually necessary
+    %% solve the QP
     options = optimoptions(@quadprog,'Display','off');
     [alpha,fopt,flag,out,lambda] = quadprog(H, f, [-Dinv, Dinv], zeros(k,1), [diag(Dinv)',-diag(Dinv)'], 1, ...
         zeros(2*k,1), [], [], options);
@@ -102,7 +113,5 @@ for i = 1:N
     
     
 end
-
-%W0(W0<=sqeps) = 0; % for numerical stability
 
 end
