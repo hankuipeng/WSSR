@@ -50,9 +50,10 @@ for i = 1:N
     
     %% We remove any zero cosine similarities
     if sum(sims <= 1e-4) ~= 0 
-        idx = find(sims >= 1e-4);
-        sims = sims(find(sims >= 1e-4));
-        Xopt = Xopt(:,idx);
+        ind = find(sims >= 1e-4);
+        sims = sims(ind);
+        idx = idx(ind);
+        Xopt = Xopt(:,ind);
     end
     
     
