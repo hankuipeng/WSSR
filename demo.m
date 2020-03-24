@@ -35,7 +35,7 @@ hold off
 
 
 %% parameter settings 
-knn = 5;
+knn = 10;
 rho = 0.01;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
