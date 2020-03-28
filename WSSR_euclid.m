@@ -1,10 +1,33 @@
-function W0 = WSSR_euclid(X, k, rho, normalize, weight)
+% This function constructs a N by N similarity matrix based on an input
+% data matrix. It is done by solving N weighted sparse simplex
+% representation (WSSR) problems. 
+
+%%%% Inputs:
+% X: N by P data matrix.
+% k: the number of nearest neighbors to consider. 
+% rho: the l1 penalty parameter.
+% normalize: 1 or 0 depending on whether to normalize the data or not. 
+% weight: 1 or 0 depending on whether to apply a weight matrix within the 
+% l1 and l2 norm penalty of the objective.
+
+%%% Outputs:
+% W0: the N by N coefficient matrix that consists of all the solution
+% vectors.
+% objs: a vector of length N that stores all the objective function values
+% for all points given their solution vectors.
+
+% Last updated: 28th March 2020
+
+
+function [W0, objs] = WSSR_euclid(X, k, rho, normalize, weight)
 
 N = size(X, 1);
+objs = zeros(N, 1);
+epsilon = 1e-4;
 sqeps = 1.0e-2; % square root of epsilon
 
 if nargin < 4
-    normalize = 1;
+    normalize = 0;
 end
 
 if normalize == 1
@@ -68,6 +91,12 @@ for i = 1:N
     W0(i,idx(nn)) = beta;
     
     
+    %% calculate objective function value for point i
+    partA = sum((yopt-Xopt(:,nn)*beta).^2);
+    partB = sum(D*beta);
+    partC = sum((D*beta).^2);
+    objs(i) = partA/2 + partB*rho + partC*epsilon/2;
+
 end
 
 end

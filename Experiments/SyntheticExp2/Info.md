@@ -1,6 +1,6 @@
 Last updated: 28 Mar. 2020
 
-In this set of experiments, we compare the `QP` version of WSSR and the `PSGD` implementation of WSSR only for the case of `linear` subspaces. The observations and comparisons are made in terms of the following:
+In this set of experiments, we compare the `QP` version of WSSR and the `PSGD` implementation of WSSR only for the case of `affine` subspaces. The observations and comparisons are made in terms of the following:
 
 (1) How different are the objective function values for all points between QP and PSGD?
 

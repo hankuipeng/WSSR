@@ -3,12 +3,14 @@
 % representation (WSSR) problems. 
 
 %%%% Inputs:
-% X: N by P data matrix
-% k: the number of nearest neighbors to consider 
-% rho: the l1 penalty parameter
-% normalize: 1 or 0 depending on whether to normalize the data or not 
+% X: N by P data matrix.
+% k: the number of nearest neighbors to consider. 
+% rho: the l1 penalty parameter.
+% normalize: 1 or 0 depending on whether to normalize the data or not. 
 % stretch: 1 or 0 depending on whether to stretch X_{-i} to touch the
-% perpendicular hyperplane of x_{i}
+% perpendicular hyperplane of x_{i}.
+% weight: 1 or 0 depending on whether to apply a weight matrix within the 
+% l1 and l2 norm penalty of the objective.
 
 %%% Outputs:
 % W0: the N by N coefficient matrix that consists of all the solution
@@ -16,7 +18,7 @@
 % objs: a vector of length N that stores all the objective function values
 % for all points given their solution vectors.
 
-% Last updated: 28th March 2020
+% Last updated: 28th Mar. 2020
 
 
 function [W0, objs] = WSSR_cos(X, k, rho, normalize, stretch, weight)
@@ -124,7 +126,7 @@ for i = 1:N
     W0(i,idx(nn)) = beta;
     
     
-    %%
+    %% calculate objective function value for point i
     partA = sum((yopt-Xopt(:,nn)*beta).^2);
     partB = sum(D*beta);
     partC = sum((D*beta).^2);
