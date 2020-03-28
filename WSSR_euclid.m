@@ -34,7 +34,7 @@ for i = 1:N
         dists(ii) = sqrt(sum((yopt-Xopt(:,ii)).^2));
     end
     
-    [vals inds]= sort(dists, 'ascend');
+    [vals, inds]= sort(dists, 'ascend');
     
     nn = inds(1:k);
     dk = vals(1:k);
@@ -44,7 +44,7 @@ for i = 1:N
         Dinv = diag(1./max(1e-4, dk)); % prevent the scenario where dk=0
     else
         D = eye(length(dk));
-        Dinv = eye(length(dk));
+        Dinv = D;
     end
    
     
@@ -56,6 +56,7 @@ for i = 1:N
     B = -Xstar'*Xstar;
     
     H = [A, B; B, A];
+    H = (H+H')/2;
     f = rho*ones(2*k,1) - [Xstar'*ystar; -Xstar'*ystar]; 
     
     

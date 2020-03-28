@@ -2,7 +2,7 @@
 % data matrix. It is done by solving N weighted sparse simplex
 % representation (WSSR) problems. 
 
-% Inputs:
+%%%% Inputs:
 % X: N by P data matrix
 % k: the number of nearest neighbors to consider 
 % rho: the l1 penalty parameter
@@ -10,12 +10,20 @@
 % stretch: 1 or 0 depending on whether to stretch X_{-i} to touch the
 % perpendicular hyperplane of x_{i}
 
-% Last updated: 16th March 2020
+%%% Outputs:
+% W0: the N by N coefficient matrix that consists of all the solution
+% vectors.
+% objs: a vector of length N that stores all the objective function values
+% for all points given their solution vectors.
+
+% Last updated: 28th March 2020
 
 
-function W0 = WSSR_cos(X, k, rho, normalize, stretch, weight)
+function [W0, objs] = WSSR_cos(X, k, rho, normalize, stretch, weight)
 
 N = size(X, 1);
+objs = zeros(N, 1);
+epsilon = 1e-4;
 sqeps = 1.0e-2; % square root of epsilon
 
 if nargin < 4
@@ -62,8 +70,8 @@ for i = 1:N
     %[vals, inds]= sort(sims, 'descend');
     
     if k == 0 % consider only the positive similarity values 
-        dk = vals(find(vals>0));
-        nn = inds(find(vals>0));
+        dk = vals(vals>0);
+        nn = inds(vals>0);
         k = length(dk);
     else
         if k > length(vals) % if some zero entries have been removed from sims
@@ -77,11 +85,13 @@ for i = 1:N
     end
     
     
-    %%
+    %% calculate the weight matrix
     if weight == 1
+        D = diag(1./dk);
         Dinv = diag(dk);
     else
-        Dinv = eye(length(dk));
+        D = eye(length(dk));
+        Dinv = D;
     end 
     
     
@@ -102,6 +112,7 @@ for i = 1:N
     B = -Xstar'*Xstar;
     
     H = [A, B; B, A];
+    H = (H+H')/2;
     f = rho*ones(2*k,1) - [Xstar'*ystar; -Xstar'*ystar]; 
     
     
@@ -112,6 +123,12 @@ for i = 1:N
     beta = Dinv * (alpha(1:k) - alpha(k+1:2*k));
     W0(i,idx(nn)) = beta;
     
+    
+    %%
+    partA = sum((yopt-Xopt(:,nn)*beta).^2);
+    partB = sum(D*beta);
+    partC = sum((D*beta).^2);
+    objs(i) = partA/2 + partB*rho + partC*epsilon/2;
     
 end
 
