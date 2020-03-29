@@ -40,11 +40,11 @@ rho = 0.01;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
 stretch = 1; % whether to stretch the points to reach the unit sphere
+denom = 10;
+MaxIter = 200;
 
 
 %% WSSR_PSGD_cos
-denom = 10;
-MaxIter = 200;
 tic;
 W = WSSR_PSGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch);
 time = toc
@@ -65,6 +65,15 @@ cluster_performance(grps, Truth)
 %% WSSR-LE (using cosine similarity -- for linear subspace)
 tic;
 W = WSSR_le_cos(X, knn, rho, normalize, stretch, weight);
+time = toc
+A = (abs(W) + abs(W'))./2;
+grps = SpectralClustering(A, K);
+cluster_performance(grps, Truth)
+
+
+%% WSSR_PSGD_euclid
+tic;
+W = WSSR_PSGD_euclid(X, knn, rho, normalize, denom, MaxIter);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
