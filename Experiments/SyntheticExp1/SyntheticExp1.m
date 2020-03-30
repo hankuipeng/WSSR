@@ -5,7 +5,7 @@ addpath(genpath(repo_path))
 
 
 %% load existing data examples 
-load('Example3_27Mar.mat')
+load('Example1_26Mar.mat')
 
 
 %% or generate some data 
@@ -47,7 +47,7 @@ hold off
 
 %% parameter settings for WSSR_QP
 knn = 10;
-rho = 0.01;
+rho = 0.001;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
 stretch = 1; % whether to stretch the points to reach the unit sphere
@@ -62,8 +62,8 @@ cluster_performance(grps, Truth)
 
 
 %% additional parameters for WSSR_PSGD
-denom = 10; % one part of the denominator of the step size
-MaxIter = 100;
+denom = 50; % one part of the denominator of the step size
+MaxIter = 500;
 
 
 %% obtain the objective function values from WSSR_PSGD
@@ -88,7 +88,7 @@ plot(objs1-objs2)
 
 
 %% 2. compare the solution vectors of these two 
-i = 5; % pick a point 
+i = 123; % pick a point 
 
 vals_qp_i = W1(i, W1(i,:) >= 1e-4)
 inds_qp_i = find(W1(i,:) >= 1e-4)

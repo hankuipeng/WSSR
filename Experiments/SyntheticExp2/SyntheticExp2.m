@@ -10,22 +10,22 @@ load('edge_case_dat.mat')
 
 %% or generate some data 
 P = 3;
-q = 1;
+q = 2;
 Nk = 100;
 K = 3;
 N = Nk*K;
 
 % make sure the results are reproducible
-rng(1)
+rng(10)
 
 % if we want to generate data from linear subspaces 
 %[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'linear');
 
 % if we want to generate data from affine subspaces 
-[X0 Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
+[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
 
 % add some noise to the data 
-noi = 0.001;
+noi = 0.01;
 X = X0 + normrnd(0, noi, size(X0));
 
 
@@ -44,7 +44,7 @@ for k = 1:K
 end
 hold off
 
-%%%%%%%%%%
+
 %% parameters for QP
 knn = 10;
 rho = 0.001;
@@ -61,7 +61,7 @@ cluster_performance(grps, Truth)
 
 
 %% additional parameters for PSGD
-denom = 1;
+denom = 50;
 MaxIter = 1000;
 
 
