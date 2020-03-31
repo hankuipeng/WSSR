@@ -1,3 +1,10 @@
+%% set path and add the main code repo to path
+repo_path = pwd;
+addpath(genpath(repo_path))
+
+clear repo_path
+
+
 %% generate the noise-free data first (and keep this base X0 fixed)
 P = 3;
 q = 1;

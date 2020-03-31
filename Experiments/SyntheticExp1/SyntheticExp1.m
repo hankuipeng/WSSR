@@ -3,6 +3,8 @@ cd ../.. % go to the main code repo
 repo_path = pwd;
 addpath(genpath(repo_path))
 
+clear repo_path
+
 
 %% load existing data examples 
 load('Example1_26Mar.mat')
