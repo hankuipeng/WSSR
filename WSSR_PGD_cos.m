@@ -1,13 +1,13 @@
 % This function solves the Weighted Sparse Simplex Representation (WSSR)
-% problem through Projected Subgradient Descent (PSGD). We first solves the 
+% problem through Projected Gradient Descent (PGD). We first solves the 
 % subproblem of WSSR analytically to obtain \beta_0, then we project
 % \beta_0 to the probability simplex to obtain \beta_1. We use \beta_1 as
 % the initial solution vector to the PSGD algorithm. 
 
-% Last edited: 27 Mar. 2020
+% Last edited: 31 Mar. 2020
 
 
-function [W, obj_stars] = WSSR_PSGD_cos(X, k, rho, normalize, denom, MaxIter, stretch)
+function [W, obj_stars] = WSSR_PGD_cos(X, k, rho, normalize, denom, MaxIter, stretch)
 
 
 %%% Inputs:
@@ -85,7 +85,6 @@ for i = 1:N
     end
     
     D = diag(1./dk);
-    Dinv = diag(dk);
     Ynew = X(idx(nn),:)'; % P x k
     
     
@@ -109,7 +108,7 @@ for i = 1:N
     beta_cur = SimplexProj(beta_cur); % \beta_1
     
     
-    %% Projected Subgradient Descent (PSGD) 
+    %% Projected Gradient Descent (PGD) 
     objs = [];
     for iter = 1:MaxIter
         
@@ -141,7 +140,7 @@ for i = 1:N
         objs = [objs; obj_cur]; % the objective function value over iterations for one point 
         
         % stop when the objective stops decreasing 
-        if iter > 1 && abs(objs(iter) - objs(iter-1)) <= epsilon
+        if iter > 1 && abs(objs(iter) - objs(iter-1)) <= 1e-6
             break
         end
         

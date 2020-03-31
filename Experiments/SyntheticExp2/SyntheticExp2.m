@@ -9,14 +9,14 @@ load('edge_case_dat.mat')
 
 
 %% or generate some data 
-P = 3;
+P = 5;
 q = 2;
 Nk = 100;
 K = 3;
 N = Nk*K;
 
 % make sure the results are reproducible
-rng(10)
+rng(1)
 
 % if we want to generate data from linear subspaces 
 %[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'linear');
@@ -60,13 +60,13 @@ grps = SpectralClustering(A1, K);
 cluster_performance(grps, Truth)
 
 
-%% additional parameters for PSGD
-denom = 50;
+%% additional parameters for PGD
+denom = 5;
 MaxIter = 1000;
 
 
 %% WSSR -- PSGD
-[W2, objs2] = WSSR_PSGD_euclid(X, knn, rho, normalize, denom, MaxIter);
+[W2, objs2] = WSSR_PGD_euclid(X, knn, rho, normalize, denom, MaxIter);
 A2 = (abs(W2) + abs(W2'))./2;
 A2(A2 <= 1e-4) = 0; 
 grps = SpectralClustering(A2, K);
@@ -78,7 +78,7 @@ plot(1:N, objs1)
 hold on 
 plot(1:N, objs2)
 hold on
-legend('QP', 'PSGD')
+legend('QP', 'PGD')
 hold off
 
 
@@ -103,4 +103,4 @@ imshow(A1*100)
 title('QP')
 subplot(1,2,2)
 imshow(A2*100)
-title('PSGD')
+title('PGD')

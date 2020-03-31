@@ -22,10 +22,10 @@ rng(1)
 [X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'linear');
 
 % if we want to generate data from affine subspaces 
-%[X0 Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
+%[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
 
 % add some noise to the data 
-noi = 0.001;
+noi = 0.15;
 X = X0 + normrnd(0, noi, size(X0));
 
 
@@ -61,13 +61,13 @@ grps = SpectralClustering(A1, K);
 cluster_performance(grps, Truth)
 
 
-%% additional parameters for WSSR_PSGD
-denom = 50; % one part of the denominator of the step size
+%% additional parameters for WSSR_PGD
+denom = 5; % one part of the denominator of the step size
 MaxIter = 500;
 
 
-%% obtain the objective function values from WSSR_PSGD
-[W2, objs2] = WSSR_PSGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch);
+%% obtain the objective function values from WSSR_PGD
+[W2, objs2] = WSSR_PGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch);
 A2 = (abs(W2) + abs(W2'))./2;
 A2(A2<=1e-4) = 0;
 grps = SpectralClustering(A2, K);
@@ -79,7 +79,7 @@ plot(1:N, objs1)
 hold on 
 plot(1:N, objs2)
 hold on
-legend('QP', 'PSGD')
+legend('QP', 'PGD')
 hold off
 
 
@@ -88,7 +88,7 @@ plot(objs1-objs2)
 
 
 %% 2. compare the solution vectors of these two 
-i = 123; % pick a point 
+i = 13; % pick a point 
 
 vals_qp_i = W1(i, W1(i,:) >= 1e-4)
 inds_qp_i = find(W1(i,:) >= 1e-4)
@@ -104,4 +104,4 @@ imshow(A1*100)
 title('QP')
 subplot(1,2,2)
 imshow(A2*100)
-title('PSGD')
+title('PGD')

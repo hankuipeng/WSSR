@@ -4,12 +4,13 @@ q = 3;
 Nk = 100;
 K = 3;
 N = Nk*K;
+rng(1)
 
 % if we want to generate data from linear subspaces 
-[X0 Truth] = GenSubDat(P, q, Nk, K, 0, 'linear');
+[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'linear');
 
 % if we want to generate data from affine subspaces 
-%[X0 Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
+%[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
 
 % add some noise to the data 
 noi = 0.01;
@@ -36,17 +37,17 @@ hold off
 
 %% parameter settings 
 knn = 10;
-rho = 0.01;
+rho = 0.001;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
 stretch = 1; % whether to stretch the points to reach the unit sphere
-denom = 10;
-MaxIter = 200;
+denom = 5;
+MaxIter = 500;
 
 
-%% WSSR_PSGD_cos
+%% WSSR_PGD_cos
 tic;
-W = WSSR_PSGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch);
+W = WSSR_PGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
@@ -71,9 +72,9 @@ grps = SpectralClustering(A, K);
 cluster_performance(grps, Truth)
 
 
-%% WSSR_PSGD_euclid
+%% WSSR_PGD_euclid
 tic;
-W = WSSR_PSGD_euclid(X, knn, rho, normalize, denom, MaxIter);
+W = WSSR_PGD_euclid(X, knn, rho, normalize, denom, MaxIter);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
@@ -81,21 +82,25 @@ cluster_performance(grps, Truth)
 
 
 %% WSSR_euclid (using cosine similarity -- for affine subspace)
+tic;
 W = WSSR_euclid(X, knn, rho, normalize, weight);
+time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
 cluster_performance(grps, Truth)
 
 
 %% WSSR-LE (using Euclidean distance -- for affine subspace)
+tic;
 W = WSSR_le_euclid(X, knn, rho, normalize, weight);
+time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
 cluster_performance(grps, Truth)
 
 
 %% visualise the similarity matrix
-imshow(A)
+imshow(A*100)
 
 
 %% visualise the clustering result
