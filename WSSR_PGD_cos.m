@@ -2,7 +2,7 @@
 % problem through Projected Gradient Descent (PGD). We first solves the 
 % subproblem of WSSR analytically to obtain \beta_0, then we project
 % \beta_0 to the probability simplex to obtain \beta_1. We use \beta_1 as
-% the initial solution vector to the PSGD algorithm. 
+% the initial solution vector to the PGD algorithm. 
 
 % Last edited: 31 Mar. 2020
 
@@ -16,7 +16,7 @@ function [W, obj_stars] = WSSR_PGD_cos(X, k, rho, normalize, denom, MaxIter, str
 % rho: the penalty parameter on the l1 norm of the WSSR objective.
 % normalize: 1 or 0, whether we normalize the data to unit length or not. 
 % denom: the step size parameter (in the denominator part).
-% MaxIter: the maximum number of iterations to run PSGD.
+% MaxIter: the maximum number of iterations to run PGD.
 % stretch: whether to stretch the data points or not. 
 
 %%% Outputs:
@@ -117,19 +117,14 @@ for i = 1:N
         % notes' from: https://web.stanford.edu/class/ee392o/subgrad_method.pdf
         ss = 1/(denom + iter);
         
-        % step 2: calculate the subgradient
-        %v = rho.*Dinv*(Ynew'*yopt - (Ynew'*Ynew + epsilon.*D'*D)*beta_cur);
-        v = zeros(length(beta_cur), 1);
-        v(beta_cur>0) = 1;
-        v(beta_cur>0) = -1;
-        g = -Ynew'*yopt + Ynew'*Ynew*beta_cur + rho.*D*v + epsilon.*D'*D*beta_cur;
+        % step 2: calculate the gradient
+        g = -Ynew'*yopt + Ynew'*Ynew*beta_cur + rho.*diag(D) + epsilon.*D'*D*beta_cur;
         
         % step 3: gradient update step 
         beta1 = beta_cur - ss.*g;
         
         % step 4: projection onto the probability simplex
         beta_cur = SimplexProj(beta1);
-        betas(:,iter) = beta_cur;
         
         % step 5: record the current objective function value
         partA = sum((yopt-Ynew*beta_cur).^2);
@@ -147,8 +142,7 @@ for i = 1:N
     end
     
     [obj_stars(i), ind] = min(objs); % the vector of objective function values for all points 
-    beta_best = betas(:,ind); % pick the solution vector that matches with the smallest objective function value 
-    W(i,idx(nn)) = beta_best;
+    W(i,idx(nn)) = beta_cur;
     
     
 end

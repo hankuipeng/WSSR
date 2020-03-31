@@ -1,6 +1,6 @@
 %% generate the noise-free data first (and keep this base X0 fixed)
-P = 10;
-q = 3;
+P = 3;
+q = 1;
 Nk = 100;
 K = 3;
 N = Nk*K;
@@ -13,7 +13,7 @@ rng(1)
 %[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
 
 % add some noise to the data 
-noi = 0.01;
+noi = 0.15;
 X = X0 + normrnd(0, noi, size(X0));
 
 
@@ -37,7 +37,7 @@ hold off
 
 %% parameter settings 
 knn = 10;
-rho = 0.001;
+rho = 0.01;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
 stretch = 1; % whether to stretch the points to reach the unit sphere
