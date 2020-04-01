@@ -4,7 +4,7 @@
 % \beta_0 to the probability simplex to obtain \beta_1. We use \beta_1 as
 % the initial solution vector to the PGD algorithm. 
 
-% Last edited: 31 Mar. 2020
+% Last edited: 1 Apr. 2020
 
 
 function [W, obj_stars] = WSSR_PGD_cos(X, k, rho, normalize, denom, MaxIter, stretch)
@@ -55,29 +55,22 @@ epsilon = 1.0e-4;
 %%
 for i = 1:N
     
-    idx = 1:N;
-    idx(i) = [];
-    
-    yopt = X(i,:)';
-    Xopt = X(idx,:)';
-    
-    
     %% We remove any zero cosine similarities
-    sims = yopt'*Xopt;
-    
-    if sum(sims == 0) ~= 0 
-        idx = idx(sims~=0);
-        sims = sims(sims~=0);
+    yopt = X(i,:)';
+    sims = abs(X*yopt);
+    sims(i) = -Inf; % exclude the point itself 
+    if sum(sims <= epsilon) ~= 0 
+        ind = find(sims >= epsilon);
+        sims = sims(sims >= epsilon);
     end
     
     
     %% sort the similarity values in descending order 
     [vals, inds]= sort(abs(sims), 'descend'); % absolute cosine similarity values 
-    %[vals, inds]= sort(sims, 'descend'); % cosine similarity values 
     
     if k == 0 % consider only the positive similarity values 
-        dk = vals(vals>0);
-        nn = inds(vals>0);
+        dk = vals(vals > epsilon);
+        nn = inds(vals > epsilon);
         k = length(dk);
     else
         dk = vals(1:k);
@@ -85,7 +78,7 @@ for i = 1:N
     end
     
     D = diag(1./dk);
-    Ynew = X(idx(nn),:)'; % P x k
+    Ynew = X(ind(nn),:)'; % P x k
     
     
     %% stretch the data points that will be considered in the program
@@ -141,8 +134,8 @@ for i = 1:N
         
     end
     
-    [obj_stars(i), ind] = min(objs); % the vector of objective function values for all points 
-    W(i,idx(nn)) = beta_cur;
+    [obj_stars(i), ~] = min(objs); % the vector of objective function values for all points 
+    W(i,ind(nn)) = beta_cur;
     
     
 end

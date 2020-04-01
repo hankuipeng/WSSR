@@ -18,15 +18,16 @@
 % objs: a vector of length N that stores all the objective function values
 % for all points given their solution vectors.
 
-% Last updated: 28th Mar. 2020
+% Last updated: 1 Apr. 2020
 
 
 function [W0, objs] = WSSR_cos(X, k, rho, normalize, stretch, weight)
 
 N = size(X, 1);
 objs = zeros(N, 1);
-epsilon = 1e-4;
-sqeps = 1.0e-2; % square root of epsilon
+W0 = zeros(N);
+epsilon = 1e-4; 
+sqeps = 1e-2; % square root of epsilon
 
 if nargin < 4
     normalize = 1;
@@ -38,7 +39,7 @@ if normalize == 1
 end
 
 if nargin < 5
-    stretch = 0; % the default setting does not stretch the data points
+    stretch = 1; 
 end
 
 if nargin < 6
@@ -47,29 +48,20 @@ end
 
 
 %%
-W0 = zeros(N);
 for i = 1:N
     
-    idx = 1:N;
-    idx(i) = [];
-    
-    Xopt = X(idx,:)';
-    yopt = X(i,:)';
-    
-    sims = yopt'*Xopt;
-    
     %% We remove any zero cosine similarities
-    if sum(sims <= 1e-4) ~= 0 
-        ind = find(sims >= 1e-4);
-        sims = sims(ind);
-        idx = idx(ind);
-        Xopt = Xopt(:,ind);
+    yopt = X(i,:)';
+    sims = abs(X*yopt);
+    sims(i) = -Inf; % exclude the point itself 
+    if sum(sims <= epsilon) ~= 0 
+        ind = find(sims >= epsilon);
+        sims = sims(sims >= epsilon);
     end
     
     
     %% sort the similarity values in descending order 
     [vals, inds]= sort(abs(sims), 'descend');
-    %[vals, inds]= sort(sims, 'descend');
     
     if k == 0 % consider only the positive similarity values 
         dk = vals(vals>0);
@@ -98,23 +90,24 @@ for i = 1:N
     
     
     %% stretch the data points that will be considered in the program
+    Y = X(ind(nn),:)';
     if stretch
-        Xst = Xopt(:,nn);
+        Xst = Y;
         Ts = 1./(yopt'*Xst);
         Xst = Xst*diag(Ts);
-        Xopt(:,nn) = Xst;
+        Y = Xst;
     end
 
     
     %% QP for Constrained LASSO
-    Xstar = [Xopt(:,nn)*Dinv; sqeps*eye(k)]; 
+    Xstar = [Y*Dinv; sqeps*eye(k)]; 
     ystar = [yopt; zeros(k,1)];
     
     A = Xstar'*Xstar;
     B = -Xstar'*Xstar;
     
     H = [A, B; B, A];
-    H = (H+H')/2;
+    %H = (H+H')/2;
     f = rho*ones(2*k,1) - [Xstar'*ystar; -Xstar'*ystar]; 
     
     
@@ -123,11 +116,11 @@ for i = 1:N
     [alpha,fopt,flag,out,lambda] = quadprog(H, f, [-Dinv, Dinv], zeros(k,1), [diag(Dinv)',-diag(Dinv)'], 1, ...
         zeros(2*k,1), [], [], options);
     beta = Dinv * (alpha(1:k) - alpha(k+1:2*k));
-    W0(i,idx(nn)) = beta;
+    W0(i,ind(nn)) = beta;
     
     
     %% calculate objective function value for point i
-    partA = sum((yopt-Xopt(:,nn)*beta).^2);
+    partA = sum((yopt-Y*beta).^2);
     partB = sum(D*beta);
     partC = sum((D*beta).^2);
     objs(i) = partA/2 + partB*rho + partC*epsilon/2;

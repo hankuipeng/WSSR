@@ -16,15 +16,10 @@
 % objs: a vector of length N that stores all the objective function values
 % for all points given their solution vectors.
 
-% Last updated: 28th March 2020
+% Last updated: 1 Apr. 2020
 
 
 function [W0, objs] = WSSR_euclid(X, k, rho, normalize, weight)
-
-N = size(X, 1);
-objs = zeros(N, 1);
-epsilon = 1e-4;
-sqeps = 1.0e-2; % square root of epsilon
 
 if nargin < 4
     normalize = 0;
@@ -39,32 +34,30 @@ if nargin < 5
     weight = 1;
 end
 
+N = size(X, 1);
+objs = zeros(N, 1);
+epsilon = 1e-4;
+sqeps = 1e-2; % square root of epsilon
+W0 = zeros(N);
+
 
 %%
-W0 = zeros(N);
 for i = 1:N
     
-    idx = 1:N;
-    idx(i) = [];
-    
-    Xopt = X(idx,:)';
-    yopt = X(i,:)';
-    
-    
     %% calculate the Euclidean distances
-    dists = [];
-    for ii = 1:size(Xopt, 2)
-        dists(ii) = sqrt(sum((yopt-Xopt(:,ii)).^2));
-    end
+    yopt = X(i,:)';
+    dists_sq = sum((repmat(yopt', N, 1) - X).^2, 2);
+    dists = arrayfun(@(x) sqrt(x), dists_sq);
+    dists(i) = Inf; % don't choose itself 
     
-    [vals, inds]= sort(dists, 'ascend');
-    
+    [vals, inds]= sort(dists, 'ascend');    
     nn = inds(1:k);
-    dk = vals(1:k);
+    dk = max(vals(1:k), epsilon);
+    Y = X(nn,:)'; % P x k
     
     if weight == 1
         D = diag(dk);
-        Dinv = diag(1./max(1e-4, dk)); % prevent the scenario where dk=0
+        Dinv = diag(1./dk); 
     else
         D = eye(length(dk));
         Dinv = D;
@@ -72,14 +65,14 @@ for i = 1:N
    
     
     %% QP for Constrained LASSO
-    Xstar = [Xopt(:,nn)*Dinv; sqeps*eye(k)]; 
+    Xstar = [Y*Dinv; sqeps*eye(k)]; 
     ystar = [yopt; zeros(k,1)];
     
     A = Xstar'*Xstar;
     B = -Xstar'*Xstar;
     
     H = [A, B; B, A];
-    H = (H+H')/2;
+    %H = (H+H')/2;
     f = rho*ones(2*k,1) - [Xstar'*ystar; -Xstar'*ystar]; 
     
     
@@ -88,11 +81,11 @@ for i = 1:N
     [alpha,fopt,flag,out,lambda] = quadprog(H, f, [-Dinv, Dinv], zeros(k,1), [diag(Dinv)',-diag(Dinv)'], 1, ...
         zeros(2*k,1), [], [], options);
     beta = Dinv * (alpha(1:k) - alpha(k+1:2*k));
-    W0(i,idx(nn)) = beta;
+    W0(i,nn) = beta;
     
     
     %% calculate objective function value for point i
-    partA = sum((yopt-Xopt(:,nn)*beta).^2);
+    partA = sum((yopt-Y*beta).^2);
     partB = sum(D*beta);
     partC = sum((D*beta).^2);
     objs(i) = partA/2 + partB*rho + partC*epsilon/2;

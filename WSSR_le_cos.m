@@ -47,7 +47,7 @@ for i = 1:N
    
     
     %% calculate the cosine similarities
-    sims = yopt'*Xopt;
+    sims = abs(yopt'*Xopt);
     
     if sum(sims <= 1e-4) ~= 0 
         ind = find(sims >= 1e-4);
@@ -55,14 +55,14 @@ for i = 1:N
         idx = idx(ind);
     end
     
-    [vals inds]= sort(abs(sims), 'descend');
+    [vals, inds]= sort(abs(sims), 'descend');
     %[vals inds]= sort(sims, 'descend');
     
     
     %%
     if k == 0 % consider only the positive similarity values 
-        dk = vals(find(vals>0));
-        nn = inds(find(vals>0));
+        dk = vals(vals>0);
+        nn = inds(vals>0);
         k = length(dk);
     else
         if k > length(vals) % if some zero entries have been removed from sims

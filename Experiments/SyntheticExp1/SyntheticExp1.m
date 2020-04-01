@@ -27,7 +27,7 @@ rng(1)
 %[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
 
 % add some noise to the data 
-noi = 0.15;
+noi = 0.1;
 X = X0 + normrnd(0, noi, size(X0));
 
 
@@ -58,20 +58,18 @@ stretch = 1; % whether to stretch the points to reach the unit sphere
 %% obtain the objective function values from WSSR_QP
 [W1, objs1] = WSSR_cos(X, knn, rho, normalize, stretch, weight);
 A1 = (abs(W1) + abs(W1'))./2;
-A1(A1<=1e-4) = 0; 
 grps = SpectralClustering(A1, K);
 cluster_performance(grps, Truth)
 
 
 %% additional parameters for WSSR_PGD
-denom = 5; % one part of the denominator of the step size
-MaxIter = 500;
+denom = 10; % one part of the denominator of the step size
+MaxIter = 1000;
 
 
 %% obtain the objective function values from WSSR_PGD
 [W2, objs2] = WSSR_PGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch);
 A2 = (abs(W2) + abs(W2'))./2;
-A2(A2<=1e-4) = 0;
 grps = SpectralClustering(A2, K);
 cluster_performance(grps, Truth)
 
@@ -90,7 +88,7 @@ plot(objs1-objs2)
 
 
 %% 2. compare the solution vectors of these two 
-i = 13; % pick a point 
+i = 10; % pick a point 
 
 vals_qp_i = W1(i, W1(i,:) >= 1e-4)
 inds_qp_i = find(W1(i,:) >= 1e-4)

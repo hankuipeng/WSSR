@@ -11,8 +11,8 @@ load('edge_case_dat.mat')
 
 
 %% or generate some data 
-P = 5;
-q = 2;
+P = 3;
+q = 1;
 Nk = 100;
 K = 3;
 N = Nk*K;
@@ -57,20 +57,18 @@ normalize = 0; % whether to normalise the data to have unit length
 %% WSSR -- QP
 [W1, objs1] = WSSR_euclid(X, knn, rho, normalize, weight);
 A1 = (abs(W1) + abs(W1'))./2;
-A1(A1 <= 1e-4) = 0; 
 grps = SpectralClustering(A1, K);
 cluster_performance(grps, Truth)
 
 
 %% additional parameters for PGD
 denom = 5;
-MaxIter = 1000;
+MaxIter = 500;
 
 
 %% WSSR -- PSGD
 [W2, objs2] = WSSR_PGD_euclid(X, knn, rho, normalize, denom, MaxIter);
 A2 = (abs(W2) + abs(W2'))./2;
-A2(A2 <= 1e-4) = 0; 
 grps = SpectralClustering(A2, K);
 cluster_performance(grps, Truth)
 
@@ -89,7 +87,7 @@ plot(objs1-objs2)
 
 
 %% 2. compare the solution vectors of these two 
-i = 5; % pick a point 
+i = 19; % pick a point 
 
 vals_qp_i = W1(i, W1(i,:) >= 1e-4)
 inds_qp_i = find(W1(i,:) >= 1e-4)

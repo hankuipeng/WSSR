@@ -17,10 +17,10 @@
 % obj_stars: a vector of length N whosen entries contain the objective
 % function values for each point.
 
-% Last edited: 31 Mar. 2020
+% Last edited: 1 Apr. 2020
 
 
-function [W, obj_stars] = WSSR_PGD_euclid(X, k, rho, normalize, denom, MaxIter)
+function [W, obj_stars] = WSSR_PGD_euclid_1Apr(X, k, rho, normalize, denom, MaxIter)
 
 if nargin < 4
     normalize = 1;
@@ -48,27 +48,17 @@ epsilon = 1.0e-4;
 %%
 for i = 1:N
     
-    idx = 1:N;
-    idx(i) = [];
-    
-    yopt = X(i,:)';
-    Xopt = X(idx,:)';
-    
-    
     %% calculate the Euclidean distances
-    dists = [];
-    for ii = 1:size(Xopt, 2)
-        dists(ii) = sqrt(sum((yopt-Xopt(:,ii)).^2));
-    end
+    yopt = X(i,:)';
+    dists_sq = sum((repmat(yopt', N, 1) - X).^2, 2);
+    dists = arrayfun(@(x) sqrt(x), dists_sq);
+    dists(i) = Inf; % don't choose itself 
     
-    [vals, inds]= sort(dists, 'ascend');
-    
+    [vals, inds]= sort(dists, 'ascend');    
     nn = inds(1:k);
-    dk = vals(1:k);
-    
+    dk = max(vals(1:k), epsilon);
     D = diag(dk);
-    
-    Ynew = X(idx(nn),:)'; % P x k
+    Ynew = X(nn,:)'; % P x k
     
     
     %% solve a system of linear equations for the subproblem
@@ -84,6 +74,7 @@ for i = 1:N
     
     %% Projected Gradient Descent (PGD) 
     objs = [];
+    betas = [];
     for iter = 1:MaxIter
         
         % step1: calculate the current step size (diminishing step sizes)
@@ -99,6 +90,7 @@ for i = 1:N
         
         % step 4: projection onto the probability simplex
         beta_cur = SimplexProj(beta1);
+        betas(iter,:) = beta_cur;
         
         % step 5: record the current objective function value
         partA = sum((yopt-Ynew*beta_cur).^2);
@@ -116,7 +108,7 @@ for i = 1:N
     end
     
     [obj_stars(i), ind] = min(objs); % the vector of objective function values for all points 
-    W(i,idx(nn)) = beta_cur;
+    W(i,nn) = betas(ind,:);
     
     
 end
