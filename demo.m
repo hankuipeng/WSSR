@@ -47,7 +47,7 @@ knn = 10;
 rho = 0.001;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
-stretch = 0; % whether to stretch the points to reach the unit sphere
+stretch = 1; % whether to stretch the points to reach the unit sphere
 denom = 5;
 MaxIter = 500;
 
