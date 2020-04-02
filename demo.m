@@ -20,7 +20,7 @@ rng(1)
 %[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
 
 % add some noise to the data 
-noi = 0.15;
+noi = 0.1;
 X = X0 + normrnd(0, noi, size(X0));
 
 
@@ -49,12 +49,13 @@ weight = 1; % whether to use the weight matrix or not
 normalize = 1; % whether to normalise the data to have unit length
 stretch = 1; % whether to stretch the points to reach the unit sphere
 denom = 5;
-MaxIter = 500;
+MaxIter = 1000;
+thr = 1e-6;
 
 
 %% WSSR_PGD_cos
 tic;
-W = WSSR_PGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch);
+W = WSSR_PGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch, thr);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
@@ -81,7 +82,7 @@ cluster_performance(grps, Truth)
 
 %% WSSR_PGD_euclid
 tic;
-W = WSSR_PGD_euclid(X, knn, rho, normalize, denom, MaxIter);
+W = WSSR_PGD_euclid(X, knn, rho, normalize, denom, MaxIter, thr);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);

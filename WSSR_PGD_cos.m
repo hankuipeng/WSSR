@@ -7,7 +7,7 @@
 % Last edited: 1 Apr. 2020
 
 
-function [W, obj_stars] = WSSR_PGD_cos(X, k, rho, normalize, denom, MaxIter, stretch)
+function [W, obj_stars] = WSSR_PGD_cos(X, k, rho, normalize, denom, MaxIter, stretch, thr)
 
 
 %%% Inputs:
@@ -46,10 +46,14 @@ if nargin < 7
     stretch = 1;
 end
 
+if nargin < 8
+    thr = 1e-4;
+end
+
 N = size(X, 1);
 W = zeros(N);
 obj_stars = zeros(N ,1);
-epsilon = 1.0e-4; 
+epsilon = 1e-4; 
 
 
 %%
@@ -128,7 +132,7 @@ for i = 1:N
         objs = [objs; obj_cur]; % the objective function value over iterations for one point 
         
         % stop when the objective stops decreasing 
-        if iter > 1 && abs(objs(iter) - objs(iter-1)) <= 1e-6
+        if iter > 1 && abs(objs(iter) - objs(iter-1)) <= thr
             break
         end
         
