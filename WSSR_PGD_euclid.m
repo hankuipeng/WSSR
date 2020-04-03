@@ -20,7 +20,7 @@
 % Last edited: 2 Apr. 2020
 
 
-function [W, obj_stars] = WSSR_PGD_euclid(X, k, rho, normalize, denom, MaxIter, thr)
+function [W, obj_stars] = WSSR_PGD_euclid(X, k, rho, normalize, ss, MaxIter, thr)
 
 if nargin < 4
     normalize = 1;
@@ -32,7 +32,7 @@ if normalize == 1
 end
 
 if nargin < 5
-    denom = 50;
+    ss = 1;
 end
 
 if nargin < 6
@@ -84,7 +84,7 @@ for i = 1:N
         % step1: calculate the current step size (diminishing step sizes)
         % I adopted the step size rule in 'sungradient methods stanford
         % notes' from: https://web.stanford.edu/class/ee392o/subgrad_method.pdf
-        ss = 1/(denom + iter);
+        % ss = 1/(denom + iter); % diminishing step size
         
         % step 2: calculate the gradient
         g = -Ynew'*yopt + Ynew'*Ynew*beta_cur + rho.*diag(D) + epsilon.*D'*D*beta_cur;

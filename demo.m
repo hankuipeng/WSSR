@@ -24,22 +24,20 @@ noi = 0.1;
 X = X0 + normrnd(0, noi, size(X0));
 
 
-%% visualize the data (if 2-D data are generated)
-scatter(X(1:Nk,1),X(1:Nk,2))
-hold on 
-scatter(X((Nk+1):(Nk*2),1),X((Nk+1):(Nk*2),2))
-hold on
-scatter(X((Nk*2+1):(Nk*3),1),X((Nk*2+1):(Nk*3),2))
-hold off 
+%% plot the data if the data are 2D
+for k = 1:K
+    scatter(X(Truth==k,1), X(Truth==k,2))
+    hold on 
+end
+hold off
 
 
-%% visualize the data (if 3-D data are generated) 
-scatter3(X(1:Nk,1),X(1:Nk,2),X(1:Nk,3))
-hold on
-scatter3(X((Nk+1):(Nk*2),1),X((Nk+1):(Nk*2),2),X((Nk+1):(Nk*2),3))
-hold on
-scatter3(X((Nk*2+1):(Nk*3),1),X((Nk*2+1):(Nk*3),2),X((Nk*2+1):(Nk*3),3))
-hold off 
+%% plot the data if the data are 3D
+for k = 1:K
+    scatter3(X(Truth==k,1), X(Truth==k,2), X(Truth==k,3))
+    hold on 
+end
+hold off
 
 
 %% parameter settings 
@@ -48,14 +46,14 @@ rho = 0.001;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
 stretch = 1; % whether to stretch the points to reach the unit sphere
-denom = 5;
+ss = 1.5;
 MaxIter = 1000;
 thr = 1e-6;
 
 
 %% WSSR_PGD_cos
 tic;
-W = WSSR_PGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch, thr);
+W = WSSR_PGD_cos(X, knn, rho, normalize, ss, MaxIter, stretch, thr);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
@@ -81,8 +79,10 @@ cluster_performance(grps, Truth)
 
 
 %% WSSR_PGD_euclid
+% The Euclidean version of PGD requires a much larger step size than the
+% absolute cosine similarity version.
 tic;
-W = WSSR_PGD_euclid(X, knn, rho, normalize, denom, MaxIter, thr);
+W = WSSR_PGD_euclid(X, knn, rho, normalize, ss*1000, MaxIter, thr);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
