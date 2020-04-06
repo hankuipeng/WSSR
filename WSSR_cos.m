@@ -51,12 +51,19 @@ end
 for i = 1:N
     
     %% We remove any zero cosine similarities
+    idx = 1:N;
+    idx(i) = [];
+    
+    Xopt = X(idx,:)';
     yopt = X(i,:)';
-    sims = abs(X*yopt);
-    sims(i) = -Inf; % exclude the point itself 
-    if sum(sims <= epsilon) ~= 0 
-        ind = find(sims >= epsilon);
-        sims = sims(sims >= epsilon);
+   
+    % calculate the cosine similarities
+    sims = abs(yopt'*Xopt);
+    
+    if sum(sims <= 1e-4) ~= 0 
+        ind = find(sims >= 1e-4);
+        sims = sims(ind);
+        idx = idx(ind);
     end
     
     
@@ -90,7 +97,8 @@ for i = 1:N
     
     
     %% stretch the data points that will be considered in the program
-    Y = X(ind(nn),:)';
+    Y = X(idx(nn),:)';
+    
     if stretch
         Xst = Y;
         Ts = 1./(yopt'*Xst);
@@ -107,7 +115,6 @@ for i = 1:N
     B = -Xstar'*Xstar;
     
     H = [A, B; B, A];
-    %H = (H+H')/2;
     f = rho*ones(2*k,1) - [Xstar'*ystar; -Xstar'*ystar]; 
     
     
@@ -116,7 +123,7 @@ for i = 1:N
     [alpha,fopt,flag,out,lambda] = quadprog(H, f, [-Dinv, Dinv], zeros(k,1), [diag(Dinv)',-diag(Dinv)'], 1, ...
         zeros(2*k,1), [], [], options);
     beta = Dinv * (alpha(1:k) - alpha(k+1:2*k));
-    W0(i,ind(nn)) = beta;
+    W0(i,idx(nn)) = beta;
     
     
     %% calculate objective function value for point i

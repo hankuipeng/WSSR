@@ -1,3 +1,5 @@
 # ignore OMP related files
 OMP_FS.m
 WSSR_PGD_OMP.m
+Helpers/KSCq.m
+Helpers/SC_KSC.m

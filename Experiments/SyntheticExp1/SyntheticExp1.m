@@ -27,7 +27,7 @@ rng(1)
 %[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
 
 % add some noise to the data 
-noi = 0.1;
+noi = 0.15;
 X = X0 + normrnd(0, noi, size(X0));
 
 
@@ -63,12 +63,13 @@ cluster_performance(grps, Truth)
 
 
 %% additional parameters for WSSR_PGD
-denom = 10; % one part of the denominator of the step size
-MaxIter = 1000;
+denom = 50; % one part of the denominator of the step size
+MaxIter = 500;
+thr = 1e-5;
 
 
 %% obtain the objective function values from WSSR_PGD
-[W2, objs2] = WSSR_PGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch);
+[W2, objs2] = WSSR_PGD_cos(X, knn, rho, normalize, denom, MaxIter, stretch, thr);
 A2 = (abs(W2) + abs(W2'))./2;
 grps = SpectralClustering(A2, K);
 cluster_performance(grps, Truth)
@@ -88,7 +89,7 @@ plot(objs1-objs2)
 
 
 %% 2. compare the solution vectors of these two 
-i = 10; % pick a point 
+i = 1; % pick a point 
 
 vals_qp_i = W1(i, W1(i,:) >= 1e-4)
 inds_qp_i = find(W1(i,:) >= 1e-4)

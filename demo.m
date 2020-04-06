@@ -20,7 +20,7 @@ rng(1)
 %[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
 
 % add some noise to the data 
-noi = 0.1;
+noi = 0.15;
 X = X0 + normrnd(0, noi, size(X0));
 
 
@@ -46,9 +46,9 @@ rho = 0.001;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
 stretch = 1; % whether to stretch the points to reach the unit sphere
-ss = 1.5;
-MaxIter = 1000;
-thr = 1e-6;
+ss = 20;
+MaxIter = 500;
+thr = 1e-5;
 
 
 %% WSSR_PGD_cos
@@ -82,7 +82,7 @@ cluster_performance(grps, Truth)
 % The Euclidean version of PGD requires a much larger step size than the
 % absolute cosine similarity version.
 tic;
-W = WSSR_PGD_euclid(X, knn, rho, normalize, ss*1000, MaxIter, thr);
+W = WSSR_PGD_euclid(X, knn, rho, normalize, ss*100, MaxIter, thr);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
