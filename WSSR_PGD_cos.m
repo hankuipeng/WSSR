@@ -4,10 +4,10 @@
 % \beta_0 to the probability simplex to obtain \beta_1. We use \beta_1 as
 % the initial solution vector to the PGD algorithm. 
 
-% Last edited: 6 Apr. 2020
+% Last edited: 12 Apr. 2020
 
 
-function [W, obj_stars] = WSSR_PGD_cos(X, k, rho, normalize, denom, MaxIter, stretch, thr)
+function [W, obj_star, obj_mat] = WSSR_PGD_cos(X, k, rho, normalize, num, MaxIter, stretch, thr)
 
 
 %%% Inputs:
@@ -15,7 +15,7 @@ function [W, obj_stars] = WSSR_PGD_cos(X, k, rho, normalize, denom, MaxIter, str
 % k: the number of nearest neighbours.
 % rho: the penalty parameter on the l1 norm of the WSSR objective.
 % normalize: 1 or 0, whether we normalize the data to unit length or not. 
-% denom: the step size parameter (in the denominator part).
+% num: the step size parameter (in the denominator part).
 % MaxIter: the maximum number of iterations to run PGD.
 % stretch: whether to stretch the data points or not. 
 
@@ -23,6 +23,8 @@ function [W, obj_stars] = WSSR_PGD_cos(X, k, rho, normalize, denom, MaxIter, str
 % W: the N by N coefficient matrix.
 % obj_stars: a vector of length N whosen entries contain the objective
 % function values for each point.
+% obj_mat: an N by MaxIter matrix that stores the objective function values over all
+% iterations for all points.
 
 
 if nargin < 4
@@ -35,7 +37,7 @@ if normalize == 1
 end
 
 if nargin < 5
-    denom = 1;
+    num = 1;
 end
 
 if nargin < 6
@@ -52,7 +54,8 @@ end
 
 N = size(X, 1);
 W = zeros(N);
-obj_stars = zeros(N ,1);
+obj_mat = zeros(N ,MaxIter);
+obj_star = zeros(N, 1);
 epsilon = 1e-4; 
 
 
@@ -99,7 +102,7 @@ for i = 1:N
     
     
     %% stretch the data points that will be considered in the program
-    if stretch
+    if stretch == 1
         Xst = Y;
         Ts = 1./(yopt'*Xst);
         Xst = Xst*diag(Ts);
@@ -115,26 +118,34 @@ for i = 1:N
     
     beta_le = linsolve(A,B); % solve the system of linear equations
     beta_cur = beta_le(1:k); % \beta_0
-    beta_cur = SimplexProj(beta_cur); % \beta_1
+    beta_cur = SimplexProj(beta_cur);
     
     
     %% Projected Gradient Descent (PGD) 
-    objs = [];
     betas = [];
-    for iter = 1:MaxIter
+    iter = 1;
+    while iter <= MaxIter
         
-        % step1: calculate the current step size (diminishing step sizes)
+        % step1: calculate the current step size 
+        
+        % option A: diminishing step sizes
         % I adopted the step size rule in 'sungradient methods stanford
         % notes' from: https://web.stanford.edu/class/ee392o/subgrad_method.pdf
-        ss = 1/(denom + iter);
+        % ss = 1/(num + iter);
         
-        % step 2: calculate the gradient
+        % option B: fixed step size
+        ss = num;
+        
+        % step 3: calculate the gradient
         g = -Y'*yopt + Y'*Y*beta_cur + rho.*diag(D) + epsilon.*D'*D*beta_cur;
         
-        % step 3: gradient update step 
+        % option C: tailored to the data
+        %ss = mean(beta_cur./g)*5;
+        
+        % step 4: gradient update step 
         beta1 = beta_cur - ss.*g;
         
-        % step 4: projection onto the probability simplex
+        % step 2: project \beta onto the probability simplex
         beta_cur = SimplexProj(beta1);
         betas(iter,:) = beta_cur;
         
@@ -142,20 +153,21 @@ for i = 1:N
         partA = sum((yopt-Y*beta_cur).^2);
         partB = sum(D*beta_cur);
         partC = sum((D*beta_cur).^2);
-        obj_cur = partA/2 + partB*rho + partC*epsilon/2;
+        obj = partA/2 + partB*rho + partC*epsilon/2;
+        obj_mat(i,iter) = obj; % the objective function value over iterations for one point 
         
-        objs = [objs; obj_cur]; % the objective function value over iterations for one point 
-        
-        % stop when the objective stops decreasing 
-        if iter > 1 && abs(objs(iter) - objs(iter-1)) <= thr
+        if obj < thr
+            obj_mat(i,iter:end) = obj;
             break
         end
         
+        iter = iter + 1;
+        
     end
     
-    [obj_stars(i), id] = min(objs); % the vector of objective function values for all points 
+    obj_star(i) = min(obj_mat(i,:));
+    [~, id] = min(obj_mat(i,:));
     W(i,idx(nn)) = betas(id,:);
-    
     
 end
 

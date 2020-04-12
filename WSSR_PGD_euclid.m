@@ -9,7 +9,7 @@
 % k: the number of nearest neighbors to consider. 
 % rho: the l1 penalty parameter.
 % normalize: 1 or 0 depending on whether to normalize the data or not. 
-% denom: the step size parameter (in the denominator part).
+% num: the step size parameter.
 % MaxIter: the maximum number of iterations to run PGD.
 
 %%% Outputs:
@@ -17,10 +17,16 @@
 % obj_stars: a vector of length N whosen entries contain the objective
 % function values for each point.
 
-% Last edited: 2 Apr. 2020
+% Last edited: 12 Apr. 2020
 
 
-function [W, obj_stars] = WSSR_PGD_euclid(X, k, rho, normalize, ss, MaxIter, thr)
+function [W, obj_stars, obj_mat] = WSSR_PGD_euclid(X, k, rhos, normalize, num, MaxIter, thr)
+
+N = size(X, 1);
+W = zeros(N);
+obj_stars = zeros(N ,1);
+obj_mat = zeros(N, MaxIter);
+epsilon = 1e-4; 
 
 if nargin < 4
     normalize = 1;
@@ -31,8 +37,12 @@ if normalize == 1
     X = norml2(X0, 1);
 end
 
+if length(rhos) == 1
+    rhos = ones(N, 1)*rhos;
+end
+
 if nargin < 5
-    ss = 1;
+    num = 1;
 end
 
 if nargin < 6
@@ -43,14 +53,11 @@ if nargin < 7
     thr = 1e-4;
 end
 
-N = size(X, 1);
-W = zeros(N);
-obj_stars = zeros(N ,1);
-epsilon = 1e-4; 
-
 
 %%
 for i = 1:N
+    
+    rho = rhos(i);
     
     %% calculate the Euclidean distances
     yopt = X(i,:)';
@@ -77,17 +84,25 @@ for i = 1:N
     
     
     %% Projected Gradient Descent (PGD) 
-    objs = [];
     betas = [];
-    for iter = 1:MaxIter
+    iter = 1;
+    while iter <= MaxIter
         
-        % step1: calculate the current step size (diminishing step sizes)
+        % step1: calculate the current step size 
+        
+        % option A: diminishing step sizes
         % I adopted the step size rule in 'sungradient methods stanford
         % notes' from: https://web.stanford.edu/class/ee392o/subgrad_method.pdf
-        % ss = 1/(denom + iter); % diminishing step size
+        % ss = 1/(num + iter);
+        
+        % option B: fixed step size
+        ss = num;
         
         % step 2: calculate the gradient
         g = -Ynew'*yopt + Ynew'*Ynew*beta_cur + rho.*diag(D) + epsilon.*D'*D*beta_cur;
+        
+        % option C: tailored to the data
+        % ss = mean(beta_cur./g)*5;
         
         % step 3: gradient update step 
         beta1 = beta_cur - ss.*g;
@@ -101,18 +116,20 @@ for i = 1:N
         partB = sum(D*beta_cur);
         partC = sum((D*beta_cur).^2);
         obj_cur = partA/2 + partB*rho + partC*epsilon/2;
-        
-        objs = [objs; obj_cur]; % the objective function value over iterations for one point 
+        obj_mat(i,iter) = obj_cur;
         
         % stop when the objective stops decreasing 
-        if iter > 1 && abs(objs(iter) - objs(iter-1)) <= thr
+         if obj_cur < thr
+            obj_mat(i,iter:end) = obj_cur;
             break
         end
         
+        iter = iter + 1;
+        
     end
     
-    [obj_stars(i), ind] = min(objs); % the vector of objective function values for all points 
-    W(i,nn) = betas(ind,:);
+    [obj_stars(i), id] = min(obj_mat(i,:)); % the vector of objective function values for all points 
+    W(i,nn) = betas(id,:);
     
     
 end

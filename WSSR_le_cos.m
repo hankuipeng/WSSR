@@ -1,11 +1,13 @@
 % This function is a variant of WSSR_le.m. In this function, the entries in
 % D are calculated using the absolute cosine similarity value. 
 
-% Last updated: 18 Mar. 2020
+% Last updated: 9 Apr. 2020
 
 function W0 = WSSR_le_cos(X, k, rho, normalize, stretch, weight)
 
 N = size(X, 1);
+epsilon = 1.0e-4; 
+W0 = zeros(N);
 
 if nargin < 4
     normalize = 1;
@@ -32,9 +34,6 @@ end
 
 
 %%
-epsilon = 1.0e-4; 
-W0 = zeros(N);
-
 for i = 1:N
     
     rho = rhos(i);
@@ -56,7 +55,6 @@ for i = 1:N
     end
     
     [vals, inds]= sort(abs(sims), 'descend');
-    %[vals inds]= sort(sims, 'descend');
     
     
     %%

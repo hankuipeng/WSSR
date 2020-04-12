@@ -16,10 +16,15 @@
 % objs: a vector of length N that stores all the objective function values
 % for all points given their solution vectors.
 
-% Last updated: 1 Apr. 2020
+% Last updated: 12 Apr. 2020
 
 
-function [W0, objs] = WSSR_euclid(X, k, rho, normalize, weight)
+function [W0, objs] = WSSR_QP_euclid(X, k, rhos, normalize, weight)
+
+N = size(X, 1);
+objs = zeros(N, 1);
+epsilon = 1e-4;
+W0 = zeros(N);
 
 if nargin < 4
     normalize = 0;
@@ -30,19 +35,19 @@ if normalize == 1
     X = norml2(X0, 1);
 end
 
+if length(rhos) == 1
+    rhos = ones(N, 1)*rhos;
+end
+
 if nargin < 5
     weight = 1;
 end
 
-N = size(X, 1);
-objs = zeros(N, 1);
-epsilon = 1e-4;
-sqeps = 1e-2; % square root of epsilon
-W0 = zeros(N);
-
 
 %%
 for i = 1:N
+    
+    rho = rhos(i);
     
     %% calculate the Euclidean distances
     yopt = X(i,:)';
@@ -57,30 +62,20 @@ for i = 1:N
     
     if weight == 1
         D = diag(dk);
-        Dinv = diag(1./dk); 
     else
         D = eye(length(dk));
-        Dinv = D;
     end
    
     
     %% QP for Constrained LASSO
-    Xstar = [Y*Dinv; sqeps*eye(k)]; 
-    ystar = [yopt; zeros(k,1)];
-    
-    A = Xstar'*Xstar;
-    B = -Xstar'*Xstar;
-    
-    H = [A, B; B, A];
-    %H = (H+H')/2;
-    f = rho*ones(2*k,1) - [Xstar'*ystar; -Xstar'*ystar]; 
+    H = Y'*Y+epsilon.*D*D;
+    f = rho.*diag(D)-Y'*yopt; 
     
     
     %% solve the QP
     options = optimoptions(@quadprog,'Display','off');
-    [alpha,fopt,flag,out,lambda] = quadprog(H, f, [-Dinv, Dinv], zeros(k,1), [diag(Dinv)',-diag(Dinv)'], 1, ...
-        zeros(2*k,1), [], [], options);
-    beta = Dinv * (alpha(1:k) - alpha(k+1:2*k));
+    [beta,fopt,flag,out,lambda] = quadprog(H, f, -eye(k), zeros(k,1), ones(1,k), 1, ...
+        zeros(k,1), [], [], options);
     W0(i,nn) = beta;
     
     

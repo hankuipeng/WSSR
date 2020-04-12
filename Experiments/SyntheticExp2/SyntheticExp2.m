@@ -18,7 +18,7 @@ K = 3;
 N = Nk*K;
 
 % make sure the results are reproducible
-rng(1)
+rng(10)
 
 % if we want to generate data from linear subspaces 
 %[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'linear');
@@ -27,7 +27,7 @@ rng(1)
 [X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
 
 % add some noise to the data 
-noi = 0.01;
+noi = 0.3;
 X = X0 + normrnd(0, noi, size(X0));
 
 
@@ -55,22 +55,30 @@ normalize = 0; % whether to normalise the data to have unit length
 
 
 %% WSSR -- QP
-[W1, objs1] = WSSR_euclid(X, knn, rho, normalize, weight);
+tic;
+[W1, objs1] = WSSR_QP_euclid(X, knn, rho, normalize, weight);
+time1 = toc;
 A1 = (abs(W1) + abs(W1'))./2;
 grps = SpectralClustering(A1, K);
 cluster_performance(grps, Truth)
 
 
 %% additional parameters for PGD
-denom = 5;
-MaxIter = 500;
+ss = 5;
+MaxIter = 100;
 
 
-%% WSSR -- PSGD
-[W2, objs2] = WSSR_PGD_euclid(X, knn, rho, normalize, denom, MaxIter);
+%% WSSR -- PGD
+tic;
+[W2, objs2, obj_mat2] = WSSR_PGD_euclid(X, knn, rho, normalize, ss, MaxIter);
+time2 = toc;
 A2 = (abs(W2) + abs(W2'))./2;
 grps = SpectralClustering(A2, K);
 cluster_performance(grps, Truth)
+
+% plot the change of objective function values for one point
+i = 4; % pick a point 
+plot(obj_mat2(i,:))
 
 
 %% 1a. compare the objective function values of these two 
@@ -87,13 +95,13 @@ plot(objs1-objs2)
 
 
 %% 2. compare the solution vectors of these two 
-i = 19; % pick a point 
+i = 1; % pick a point 
 
 vals_qp_i = W1(i, W1(i,:) >= 1e-4)
 inds_qp_i = find(W1(i,:) >= 1e-4)
 
-vals_psgd_i = W2(i, W2(i,:) >= 1e-4)
-inds_psgd_i = find(W2(i,:) >= 1e-4)
+vals_pgd_i = W2(i, W2(i,:) >= 1e-4)
+inds_pgd_i = find(W2(i,:) >= 1e-4)
 
 
 %% 3. compare the similarity matrix of these two

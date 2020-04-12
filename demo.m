@@ -46,30 +46,37 @@ rho = 0.001;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
 stretch = 1; % whether to stretch the points to reach the unit sphere
-ss = 20;
-MaxIter = 500;
+ss = 10;
+MaxIter = 50;
 thr = 1e-5;
 
 
-%% WSSR_PGD_cos
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Linear Subspace %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% WSSR_PGD_cos (use absolute cosine similarity)
 tic;
-W = WSSR_PGD_cos(X, knn, rho, normalize, ss, MaxIter, stretch, thr);
+[W, obj, obj_mat] = WSSR_PGD_cos(X, knn, rho, normalize, ss, MaxIter, stretch, thr);
+time = toc
+A = (abs(W) + abs(W'))./2;
+grps = SpectralClustering(A, K);
+cluster_performance(grps, Truth)
+
+% visualise the changes of objective function values for one point 
+i = 10; % pick a point
+plot(obj_mat(i,:))
+
+
+%% WSSR_QP_cos (use absolute cosine similarity)
+tic;
+[W, obj] = WSSR_QP_cos(X, knn, rho, normalize, stretch, weight);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
 cluster_performance(grps, Truth)
 
 
-%% WSSR_cos (using cosine similarity -- for linear subspace)
-tic;
-W = WSSR_cos(X, knn, rho, normalize, stretch, weight);
-time = toc
-A = (abs(W) + abs(W'))./2;
-grps = SpectralClustering(A, K);
-cluster_performance(grps, Truth)
-
-
-%% WSSR-LE (using cosine similarity -- for linear subspace)
+%% WSSR_le_cos (use absolute cosine similarity)
 tic;
 W = WSSR_le_cos(X, knn, rho, normalize, stretch, weight);
 time = toc
@@ -78,27 +85,30 @@ grps = SpectralClustering(A, K);
 cluster_performance(grps, Truth)
 
 
-%% WSSR_PGD_euclid
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Affine Subspace %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% WSSR_PGD_euclid (use Euclidean distance)
 % The Euclidean version of PGD requires a much larger step size than the
 % absolute cosine similarity version.
 tic;
-W = WSSR_PGD_euclid(X, knn, rho, normalize, ss*100, MaxIter, thr);
+W = WSSR_PGD_euclid(X, knn, rho, normalize, ss, MaxIter, thr);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
 cluster_performance(grps, Truth)
 
 
-%% WSSR_euclid (using cosine similarity -- for affine subspace)
+%% WSSR_QP_euclid (use Euclidean distance)
 tic;
-W = WSSR_euclid(X, knn, rho, normalize, weight);
+W = WSSR_QP_euclid(X, knn, rho, normalize, weight);
 time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
 cluster_performance(grps, Truth)
 
 
-%% WSSR-LE (using Euclidean distance -- for affine subspace)
+%% WSSR_le_euclid (use Euclidean distance)
 tic;
 W = WSSR_le_euclid(X, knn, rho, normalize, weight);
 time = toc

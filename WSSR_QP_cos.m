@@ -18,10 +18,10 @@
 % objs: a vector of length N that stores all the objective function values
 % for all points given their solution vectors.
 
-% Last updated: 1 Apr. 2020
+% Last updated: 12 Apr. 2020
 
 
-function [W0, objs] = WSSR_cos(X, k, rho, normalize, stretch, weight)
+function [W0, objs] = WSSR_QP_cos(X, k, rho, normalize, stretch, weight)
 
 N = size(X, 1);
 objs = zeros(N, 1);
@@ -89,10 +89,8 @@ for i = 1:N
     %% calculate the weight matrix
     if weight == 1
         D = diag(1./dk);
-        Dinv = diag(dk);
     else
         D = eye(length(dk));
-        Dinv = D;
     end 
     
     
@@ -108,22 +106,15 @@ for i = 1:N
 
     
     %% QP for Constrained LASSO
-    Xstar = [Y*Dinv; sqeps*eye(k)]; 
-    ystar = [yopt; zeros(k,1)];
-    
-    A = Xstar'*Xstar;
-    B = -Xstar'*Xstar;
-    
-    H = [A, B; B, A];
-    f = rho*ones(2*k,1) - [Xstar'*ystar; -Xstar'*ystar]; 
+    H = Y'*Y+epsilon.*D*D;
+    f = rho.*diag(D)-Y'*yopt; 
     
     
     %% solve the QP
     options = optimoptions(@quadprog,'Display','off');
-    [alpha,fopt,flag,out,lambda] = quadprog(H, f, [-Dinv, Dinv], zeros(k,1), [diag(Dinv)',-diag(Dinv)'], 1, ...
-        zeros(2*k,1), [], [], options);
-    beta = Dinv * (alpha(1:k) - alpha(k+1:2*k));
-    W0(i,idx(nn)) = beta;
+    [beta,fopt,flag,out,lambda] = quadprog(H, f, -eye(k), zeros(k,1), ones(1,k), 1, ...
+        zeros(k,1), [], [], options);
+    W0(i,nn) = beta;
     
     
     %% calculate objective function value for point i
