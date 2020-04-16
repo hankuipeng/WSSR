@@ -18,16 +18,13 @@ K = 3;
 N = Nk*K;
 
 % make sure the results are reproducible
-rng(1)
+rng(K)
 
 % if we want to generate data from linear subspaces 
 [X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'linear');
 
-% if we want to generate data from affine subspaces 
-%[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
-
 % add some noise to the data 
-noi = 0.2;
+noi = 0.3;
 X = X0 + normrnd(0, noi, size(X0));
 
 
@@ -49,7 +46,7 @@ hold off
 
 %% parameter settings for WSSR_QP
 knn = 20;
-rho = 0.001;
+rho = 0.01;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
 stretch = 1; % whether to stretch the points to reach the unit sphere
@@ -65,15 +62,22 @@ cluster_performance(grps, Truth)
 
 
 %% additional parameters for WSSR_PGD
-ss = .5; % one part of the denominator of the step size
-MaxIter = 100;
-thr = 1e-5;
+ss = 10; 
+MaxIter = 500;
+thr = 1e-7;
 
 
 %% obtain the objective function values from WSSR_PGD
 tic;
+
+% use fixed step size
+% [W2, objs2, obj_mat] = WSSR_PGD_cos_fixed(X, knn, rho, normalize, ss, MaxIter, stretch, thr);
+
+% use backtracking line search to determine step size
 [W2, objs2, obj_mat] = WSSR_PGD_cos(X, knn, rho, normalize, ss, MaxIter, stretch, thr);
+
 time2 = toc;
+
 A2 = (abs(W2) + abs(W2'))./2;
 grps = SpectralClustering(A2, K);
 cluster_performance(grps, Truth)
@@ -98,7 +102,7 @@ plot(objs1-objs2)
 
 
 %% 2. compare the solution vectors of these two 
-i = 15; % pick a point 
+i = 1; % pick a point 
 
 vals_qp_i = W1(i, W1(i,:) >= 1e-4)
 inds_qp_i = find(W1(i,:) >= 1e-4)

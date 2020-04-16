@@ -11,17 +11,14 @@ load('edge_case_dat.mat')
 
 
 %% or generate some data 
-P = 3;
-q = 1;
+P = 5;
+q = 3;
 Nk = 100;
 K = 3;
 N = Nk*K;
 
 % make sure the results are reproducible
-rng(10)
-
-% if we want to generate data from linear subspaces 
-%[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'linear');
+rng(K)
 
 % if we want to generate data from affine subspaces 
 [X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
@@ -49,7 +46,7 @@ hold off
 
 %% parameters for QP
 knn = 10;
-rho = 0.001;
+rho = 0.01;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 0; % whether to normalise the data to have unit length
 
@@ -64,14 +61,21 @@ cluster_performance(grps, Truth)
 
 
 %% additional parameters for PGD
-ss = 5;
-MaxIter = 100;
+ss = 10;
+MaxIter = 500;
 
 
 %% WSSR -- PGD
 tic;
+
+% use fixed step size 
+% [W2, objs2, obj_mat2] = WSSR_PGD_euclid_fixed(X, knn, rho, normalize, ss, MaxIter);
+
+% use backtracking line search to determine step size 
 [W2, objs2, obj_mat2] = WSSR_PGD_euclid(X, knn, rho, normalize, ss, MaxIter);
+
 time2 = toc;
+
 A2 = (abs(W2) + abs(W2'))./2;
 grps = SpectralClustering(A2, K);
 cluster_performance(grps, Truth)

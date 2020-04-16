@@ -9,7 +9,7 @@
 % k: the number of nearest neighbors to consider. 
 % rho: the l1 penalty parameter.
 % normalize: 1 or 0 depending on whether to normalize the data or not. 
-% ss: the initial step size -- we use backtracking line search.
+% num: the step size -- fixed step size is used.
 % MaxIter: the maximum number of iterations to run PGD.
 
 %%% Outputs:
@@ -17,18 +17,16 @@
 % obj_stars: a vector of length N whosen entries contain the objective
 % function values for each point.
 
-% Last edited: 15 Apr. 2020
+% Last edited: 13 Apr. 2020
 
 
-function [W, obj_stars, obj_mat] = WSSR_PGD_euclid(X, k, rhos, normalize, ss, MaxIter, thr)
+function [W, obj_stars, obj_mat] = WSSR_PGD_euclid_fixed(X, k, rhos, normalize, num, MaxIter, thr)
 
 N = size(X, 1);
 W = zeros(N);
 obj_stars = zeros(N ,1);
 obj_mat = zeros(N, MaxIter);
 epsilon = 1e-4; 
-beta = 0.8;
-alpha = 0.3;
 
 if nargin < 4
     normalize = 1;
@@ -90,37 +88,39 @@ for i = 1:N
     iter = 1;
     while iter <= MaxIter
         
-        % calculate the gradient
+        % step1: calculate the current step size 
+        
+        % option A: diminishing step sizes
+        % I adopted the step size rule in 'sungradient methods stanford
+        % notes' from: https://web.stanford.edu/class/ee392o/subgrad_method.pdf
+        % ss = 1/(num + iter);
+        
+        % option B: fixed step size
+        ss = num;
+        
+        % step 2: calculate the gradient
         g = -Ynew'*yopt + Ynew'*Ynew*beta_cur + rho.*diag(D) + epsilon.*D'*D*beta_cur;
         
-        % gradient update step 
+        % option C: tailored to the data
+        % ss = mean(beta_cur./g)*5;
+        
+        % step 3: gradient update step 
         beta1 = beta_cur - ss.*g;
         
-        left = ObjVal(yopt, Ynew, beta1, D, rho);
-        right = ObjVal(yopt, Ynew, beta_cur, D, rho) - alpha*ss*norm(g).^2;
-        
-        % backtracking line search
-        while left > right
-            ss = beta*ss;
-            beta1 = beta_cur - ss.*g;
-            left = ObjVal(yopt, Ynew, beta1, D, rho);
-            right = ObjVal(yopt, Ynew, beta_cur, D, rho) - 0.5*ss*norm(g).^2;
-        end
-        
-        % gradient update step (using updated step size)
-        beta1 = beta_cur - ss.*g;
-        
-        % projection onto the probability simplex
+        % step 4: projection onto the probability simplex
         beta_cur = SimplexProj(beta1);
         betas(iter,:) = beta_cur;
         
-        % calculate the current objective function value
-        obj = ObjVal(yopt, Ynew, beta_cur, D, rho);
-        obj_mat(i,iter) = obj; % the objective function value over iterations for one point 
+        % step 5: record the current objective function value
+        partA = sum((yopt-Ynew*beta_cur).^2);
+        partB = sum(D*beta_cur);
+        partC = sum((D*beta_cur).^2);
+        obj_cur = partA/2 + partB*rho + partC*epsilon/2;
+        obj_mat(i,iter) = obj_cur;
         
         % stop when the objective stops decreasing 
-         if obj < thr
-            obj_mat(i,iter:end) = obj;
+         if obj_cur < thr
+            obj_mat(i,iter:end) = obj_cur;
             break
         end
         

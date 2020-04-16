@@ -4,10 +4,10 @@
 % \beta_0 to the probability simplex to obtain \beta_1. We use \beta_1 as
 % the initial solution vector to the PGD algorithm. 
 
-% Last edited: 15 Apr. 2020
+% Last edited: 13 Apr. 2020
 
 
-function [W, obj_star, obj_mat] = WSSR_PGD_cos(X, k, rho, normalize, ss, MaxIter, stretch, thr)
+function [W, obj_star, obj_mat] = WSSR_PGD_cos_fixed(X, k, rho, normalize, num, MaxIter, stretch, thr)
 
 
 %%% Inputs:
@@ -15,7 +15,7 @@ function [W, obj_star, obj_mat] = WSSR_PGD_cos(X, k, rho, normalize, ss, MaxIter
 % k: the number of nearest neighbours.
 % rho: the penalty parameter on the l1 norm of the WSSR objective.
 % normalize: 1 or 0, whether we normalize the data to unit length or not. 
-% ss: initial step size -- we use backtracking line search.
+% num: the fixed step size.
 % MaxIter: the maximum number of iterations to run PGD.
 % stretch: whether to stretch the data points or not. 
 
@@ -56,9 +56,7 @@ N = size(X, 1);
 W = zeros(N);
 obj_mat = zeros(N ,MaxIter);
 obj_star = zeros(N, 1);
-epsilon = 1e-4;
-beta = 0.8;
-alpha = 0.3;
+epsilon = 1e-4; 
 
 
 %%
@@ -126,35 +124,36 @@ for i = 1:N
     %% Projected Gradient Descent (PGD) 
     betas = [];
     iter = 1;
-    
     while iter <= MaxIter
         
-        % calculate the gradient
+        % step1: calculate the current step size 
+        
+        % option A: diminishing step sizes
+        % I adopted the step size rule in 'sungradient methods stanford
+        % notes' from: https://web.stanford.edu/class/ee392o/subgrad_method.pdf
+        % ss = 1/(num + iter);
+        
+        % option B: fixed step size
+        ss = num;
+        
+        % step 3: calculate the gradient
         g = -Y'*yopt + Y'*Y*beta_cur + rho.*diag(D) + epsilon.*D'*D*beta_cur;
         
-        % gradient update step
+        % option C: tailored to the data
+        %ss = mean(beta_cur./g)*5;
+        
+        % step 4: gradient update step 
         beta1 = beta_cur - ss.*g;
         
-        left = ObjVal(yopt, Y, beta1, D, rho);
-        right = ObjVal(yopt, Y, beta_cur, D, rho) - alpha*ss*norm(g).^2;
-        
-        % backtracking line search
-        while left > right
-            ss = beta*ss;
-            beta1 = beta_cur - ss.*g;
-            left = ObjVal(yopt, Y, beta1, D, rho);
-            right = ObjVal(yopt, Y, beta_cur, D, rho) - 0.5*ss*norm(g).^2;
-        end
-        
-        % gradient update step (using updated step size)
-        beta1 = beta_cur - ss.*g;
-        
-        % project \beta onto the probability simplex
+        % step 2: project \beta onto the probability simplex
         beta_cur = SimplexProj(beta1);
         betas(iter,:) = beta_cur;
         
-        % calculate the current objective function value
-        obj = ObjVal(yopt, Y, beta_cur, D, rho);
+        % step 5: record the current objective function value
+        partA = sum((yopt-Y*beta_cur).^2);
+        partB = sum(D*beta_cur);
+        partC = sum((D*beta_cur).^2);
+        obj = partA/2 + partB*rho + partC*epsilon/2;
         obj_mat(i,iter) = obj; % the objective function value over iterations for one point 
         
         if obj < thr
