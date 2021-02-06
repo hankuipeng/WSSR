@@ -1,3 +1,7 @@
+%% create a clean environment
+clc, clear all, warning off
+
+
 %% set path and add the main code repo to path
 repo_path = pwd;
 addpath(genpath(repo_path))
@@ -6,8 +10,8 @@ clear repo_path
 
 
 %% generate the noise-free data first (and keep this base X0 fixed)
-P = 3;
-q = 1;
+P = 20;
+q = 5;
 Nk = 100;
 K = 3;
 N = Nk*K;
@@ -20,13 +24,14 @@ rng(1)
 %[X0, Truth] = GenSubDat(P, q, Nk, K, 0, 'affine');
 
 % add some noise to the data 
-noi = 0.15;
+noi = 0.1;
 X = X0 + normrnd(0, noi, size(X0));
 
 
 %% plot the data if the data are 2D
 for k = 1:K
     scatter(X(Truth==k,1), X(Truth==k,2))
+    % grid off % comment this out if grid is not wanted 
     hold on 
 end
 hold off
@@ -34,7 +39,8 @@ hold off
 
 %% plot the data if the data are 3D
 for k = 1:K
-    scatter3(X(Truth==k,1), X(Truth==k,2), X(Truth==k,3))
+    scatter3(X(Truth==k,1), X(Truth==k,2), X(Truth==k,3), 25, 'filled')
+    % grid off % comment this out if grid is not wanted 
     hold on 
 end
 hold off
@@ -42,12 +48,12 @@ hold off
 
 %% parameter settings 
 knn = 10;
-rho = 0.001;
+rho = 0.1;
 weight = 1; % whether to use the weight matrix or not 
 normalize = 1; % whether to normalise the data to have unit length
 stretch = 1; % whether to stretch the points to reach the unit sphere
 ss = 10;
-MaxIter = 50;
+MaxIter = 100;
 thr = 1e-5;
 
 
@@ -61,10 +67,6 @@ time = toc
 A = (abs(W) + abs(W'))./2;
 grps = SpectralClustering(A, K);
 cluster_performance(grps, Truth)
-
-% visualise the changes of objective function values for one point 
-i = 10; % pick a point
-plot(obj_mat(i,:))
 
 
 %% WSSR_QP_cos (use absolute cosine similarity)

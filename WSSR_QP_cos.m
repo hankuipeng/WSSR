@@ -1,14 +1,14 @@
-% This function constructs a N by N similarity matrix based on an input
-% data matrix. It is done by solving N weighted sparse simplex
+% This function constructs an N by N similarity matrix based on an input
+% data matrix, which is done by solving N weighted sparse simplex
 % representation (WSSR) problems. 
 
 %%%% Inputs:
 % X: N by P data matrix.
-% k: the number of nearest neighbors to consider. 
-% rho: the l1 penalty parameter.
-% normalize: 1 or 0 depending on whether to normalize the data or not. 
+% k: the number of nearest neighbours to consider. 
+% rho: the l1-penalty parameter.
+% normalize: 1 or 0 depending on whether to normalise the data or not. 
 % stretch: 1 or 0 depending on whether to stretch X_{-i} to touch the
-% perpendicular hyperplane of x_{i}.
+% perpendicular hyperplane of x_{i} or not.
 % weight: 1 or 0 depending on whether to apply a weight matrix within the 
 % l1 and l2 norm penalty of the objective.
 
@@ -18,7 +18,7 @@
 % objs: a vector of length N that stores all the objective function values
 % for all points given their solution vectors.
 
-% Last updated: 12 Apr. 2020
+% Last updated: 8 Jul. 2020
 
 
 function [W0, objs] = WSSR_QP_cos(X, k, rho, normalize, stretch, weight)
@@ -27,7 +27,6 @@ N = size(X, 1);
 objs = zeros(N, 1);
 W0 = zeros(N);
 epsilon = 1e-4; 
-sqeps = 1e-2; % square root of epsilon
 
 if nargin < 4
     normalize = 1;
@@ -62,8 +61,13 @@ for i = 1:N
     
     if sum(sims <= 1e-4) ~= 0 
         ind = find(sims >= 1e-4);
-        sims = sims(ind);
-        idx = idx(ind);
+        if length(ind) > 0
+            sims = sims(ind);
+            idx = idx(ind);
+        else
+            sims = 1e-4;
+            idx = randsample(idx, 1);
+        end
     end
     
     

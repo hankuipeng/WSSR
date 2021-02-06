@@ -1,6 +1,8 @@
 # ignore OMP related files
 OMP_FS.m
 WSSR_PGD_OMP.m
+WSSR_PGD_cos_fixed.m
+WSSR_PGD_euclid_fixed.m
 Helpers/KSCq.m
 Helpers/SC_KSC.m
 Helpers/RhoCalc.m
